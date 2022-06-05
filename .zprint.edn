@@ -1,0 +1,8 @@
+{:fn-map
+ {"cond-path"      :pair-fn
+  "recursive-path" :arg2}
+ :map     {:comma?   false
+           :justify? true
+           :indent   0}
+ :pair    {:justify? true}
+ :binding {:justify? true}}
