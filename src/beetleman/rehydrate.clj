@@ -1,9 +1,20 @@
 (ns beetleman.rehydrate
-  (:require [com.rpl.specter :as sr]))
+  (:require [com.rpl.specter :as sr]
+            [promesa.core :as p]))
 
 
 (defmulti many (fn [type _ctx _data] type))
 (defmulti one (fn [type _ctx _data] type))
+
+
+(defn- many-provided?
+  [type]
+  (contains? (methods many) type))
+
+
+(defn- one-provided?
+  [type]
+  (contains? (methods one) type))
 
 
 (defrecord Location [index])
@@ -50,7 +61,7 @@
   [data paths hydrated]
   (reduce
    (fn [data {:keys [location type value] :as path}]
-     (let [hydrated-value (get-in hydrated [type value] ::not-found)]
+     (let [hydrated-value (get hydrated [type value] ::not-found)]
        (if-not (= hydrated-value ::not-found)
          (assoc-in data location hydrated-value)
          (throw (ex-info "Cant find data"
@@ -60,12 +71,44 @@
    paths))
 
 
+
+(defn- rehydrate-many
+  [ctx type paths]
+  (p/then (many type ctx (mapv :value paths))
+          (fn [data]
+            (mapv (fn [{:keys [value]} x]
+                    [[type value] x])
+                  paths
+                  data))))
+
+
+(defn- rehydrate-one-by-one
+  [ctx paths]
+  (p/all (mapv
+          (fn [{:keys [value type]}]
+            (p/then (one type ctx value)
+                    (fn [rehydrated]
+                      [[type value] rehydrated])))
+          paths)))
+
+
+(defn- rehydrate
+  [ctx paths]
+  (-> (into []
+            (map (fn [[type paths]]
+                   (cond
+                     (many-provided? type) (rehydrate-many ctx type paths)
+                     (one-provided? type)  (rehydrate-one-by-one ctx paths))))
+            (group-by :type
+                      (into #{}
+                            (map #(select-keys % [:type :value]))
+                            paths)))
+      p/all
+      (p/then #(into {}
+                     (mapcat identity)
+                     %))))
+
+
 (defn run
   [data]
   data)
-
-
-
-(specter/select [specter/ALL :a :b]
-                {:a {:b 3}}
-)

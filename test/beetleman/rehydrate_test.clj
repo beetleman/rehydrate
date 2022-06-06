@@ -1,5 +1,6 @@
 (ns beetleman.rehydrate-test
   (:require [beetleman.rehydrate :as sut]
+            [promesa.core :as p]
             [clojure.test :as t]))
 
 
@@ -18,7 +19,7 @@
 
 (defmethod sut/one :bar/baz
   [_ _ctx _data]
-  bar-baz)
+  (p/promise bar-baz))
 
 
 (t/deftest find-all-test
@@ -34,4 +35,9 @@
            (#'sut/replace-all
             data
             (#'sut/find-all data [[:bar :bar/baz]])
-            {:bar/baz {1 bar-baz}}))))
+            {[:bar/baz 1] bar-baz}))))
+
+
+(t/deftest rehydrate-test
+  (t/is (= {[:bar/baz 1] bar-baz}
+           @(#'sut/rehydrate {} (#'sut/find-all data [[:bar :bar/baz]])))))
