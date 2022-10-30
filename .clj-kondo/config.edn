@@ -1,2 +1,3 @@
 {:lint-as {com.rpl.specter/recursive-path clj-kondo.lint-as/def-catch-all
-           com.rpl.specter/cond-path      clojure.core/cond}}
+           com.rpl.specter/cond-path      clojure.core/cond
+           promesa.core/let               clojure.core/let}}
