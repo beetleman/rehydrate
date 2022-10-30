@@ -25,46 +25,63 @@
 
 
 (def data
-  [{:foo 1
-    :bar {:bar/baz 1}}])
-
-
-(def bar-baz ::bar-baz-hydrated)
+  [{:key 1
+    :object {:object/to-hydrate-one-by-one 1}}
+   {:key 2
+    :object {:object/to-hydrate-one-by-one 2}}
+   {:key 3
+    :object {:object/to-hydrate-one-by-one 3}}])
 
 
 (def hydrated-data
-  [{:foo 1
-    :bar {:bar/baz bar-baz}}])
+  [{:key 1
+    :object {:object/to-hydrate-one-by-one {:hydrated/one 1}}}
+   {:key 2
+    :object {:object/to-hydrate-one-by-one {:hydrated/one 2}}}
+   {:key 3
+    :object {:object/to-hydrate-one-by-one {:hydrated/one 3}}}])
 
 
-(defmethod sut/one :bar/baz
-  [_ {::keys [result-factory] :as _ctx} _data]
-  (result-factory bar-baz))
+(defmethod sut/one :object/to-hydrate-one-by-one
+  [_ {::keys [result-factory] :as _ctx} data]
+  (result-factory {:hydrated/one data}))
 
 
 (t/deftest find-all-test
-  (t/is (= [{:target   [:bar :bar/baz]
-             :location [0 :bar :bar/baz]
-             :type     :bar/baz
-             :value    1}]
-           (#'sut/find-all data [[:bar :bar/baz]]))))
+  (t/is (= [{:target   [:object :object/to-hydrate-one-by-one]
+             :location [0 :object :object/to-hydrate-one-by-one]
+             :type     :object/to-hydrate-one-by-one
+             :value    1}
+            {:target   [:object :object/to-hydrate-one-by-one]
+             :location [1 :object :object/to-hydrate-one-by-one]
+             :type     :object/to-hydrate-one-by-one
+             :value    2}
+            {:target   [:object :object/to-hydrate-one-by-one]
+             :location [2 :object :object/to-hydrate-one-by-one]
+             :type     :object/to-hydrate-one-by-one
+             :value    3}]
+           (#'sut/find-all data [[:object :object/to-hydrate-one-by-one]]))))
 
 
 (t/deftest replace-all-test
   (t/is (= hydrated-data
            (#'sut/replace-all
             data
-            (#'sut/find-all data [[:bar :bar/baz]])
-            {[:bar/baz 1] bar-baz}))))
+            (#'sut/find-all data [[:object :object/to-hydrate-one-by-one]])
+            {[:object/to-hydrate-one-by-one 1] {:hydrated/one 1}
+             [:object/to-hydrate-one-by-one 2] {:hydrated/one 2}
+             [:object/to-hydrate-one-by-one 3] {:hydrated/one 3}}))))
 
 
 (t/deftest rehydrate-test
   (doseq [{:keys [fn name]} result-factories]
     (t/testing name
-               (t/is (= {[:bar/baz 1] bar-baz}
-                        @(#'sut/rehydrate
-                          {::result-factory fn}
-                          (#'sut/find-all data [[:bar :bar/baz]])))))))
+      (t/is (= {[:object/to-hydrate-one-by-one 1] {:hydrated/one 1}
+                [:object/to-hydrate-one-by-one 2] {:hydrated/one 2}
+                [:object/to-hydrate-one-by-one 3] {:hydrated/one 3}}
+               @(#'sut/rehydrate
+                 {::result-factory fn}
+                 (#'sut/find-all data [[:object :object/to-hydrate-one-by-one]])))))))
 
 
 (t/deftest run-test
@@ -73,4 +90,4 @@
                (t/is (= hydrated-data
                         @(sut/run {::result-factory fn}
                                   data
-                                  [[:bar :bar/baz]]))))))
+                                  [[:object :object/to-hydrate-one-by-one]]))))))
