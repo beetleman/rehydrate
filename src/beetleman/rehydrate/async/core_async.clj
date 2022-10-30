@@ -10,7 +10,7 @@
   (into-future [this]
     (p/create (fn [resolve reject]
                 (a/go
-                  (try
-                    (resolve (a/<! this))
-                    (catch Exception e
-                      (reject e))))))))
+                  (let [x (a/<! this)]
+                    (if (instance? Throwable x)
+                      (reject x)
+                      (resolve x))))))))
