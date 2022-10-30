@@ -1,13 +1,10 @@
 (ns beetleman.rehydrate.async
-  (:require [promesa.core :as p])
+  (:require [beetleman.rehydrate.async.proto :as proto]
+            [promesa.core :as p])
   (:import [java.util.concurrent CompletableFuture]))
 
 
-(defprotocol AsyncResoult
- (into-future [_]))
-
-
-(extend-protocol AsyncResoult
+(extend-protocol proto/AsyncResoult
  Object
  (into-future [this] (p/promise this))
 
@@ -16,3 +13,7 @@
 
  clojure.lang.IDeref
  (into-future [this] (p/future @this)))
+
+
+(defn into-future [x]
+  (proto/into-future x))
