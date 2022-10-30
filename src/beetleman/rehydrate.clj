@@ -1,6 +1,7 @@
 (ns beetleman.rehydrate
   (:require [com.rpl.specter :as sr]
-            [promesa.core :as p]))
+            [promesa.core :as p]
+            [beetleman.rehydrate.async :as async]))
 
 
 (defmulti many (fn [type _ctx _data] type))
@@ -75,7 +76,7 @@
 
 (defn- rehydrate-many
   [ctx type paths]
-  (p/then (many type ctx (mapv :value paths))
+  (p/then (async/into-future (many type ctx (mapv :value paths)))
           (fn [data]
             (mapv (fn [{:keys [value]} x]
                     [[type value] x])
@@ -87,7 +88,7 @@
   [ctx paths]
   (p/all (mapv
           (fn [{:keys [value type]}]
-            (p/then (one type ctx value)
+            (p/then (async/into-future (one type ctx value))
                     (fn [rehydrated]
                       [[type value] rehydrated])))
           paths)))

@@ -4,6 +4,15 @@
             [clojure.test :as t]))
 
 
+(def result-factories
+  [{:name "sync"
+    :fn   identity}
+   {:name "clojure.core/future"
+    :fn   #(future %)}
+   {:name "java.util.concurrent.CompletableFuture"
+    :fn   #(p/future %)}])
+
+
 (def data
   [{:foo 1
     :bar {:bar/baz 1}}])
@@ -18,8 +27,8 @@
 
 
 (defmethod sut/one :bar/baz
-  [_ _ctx _data]
-  (p/promise bar-baz))
+  [_ {::keys [result-factory] :as _ctx} _data]
+  (result-factory bar-baz))
 
 
 (t/deftest find-all-test
@@ -39,10 +48,18 @@
 
 
 (t/deftest rehydrate-test
-  (t/is (= {[:bar/baz 1] bar-baz}
-           @(#'sut/rehydrate {} (#'sut/find-all data [[:bar :bar/baz]])))))
+  (doseq [{:keys [fn name]} result-factories]
+    (t/testing name
+               (t/is (= {[:bar/baz 1] bar-baz}
+                        @(#'sut/rehydrate
+                          {::result-factory fn}
+                          (#'sut/find-all data [[:bar :bar/baz]])))))))
 
 
 (t/deftest run-test
-  (t/is (= hydrated-data
-           @(sut/run {} data [[:bar :bar/baz]]))))
+  (doseq [{:keys [fn name]} result-factories]
+    (t/testing name
+               (t/is (= hydrated-data
+                        @(sut/run {::result-factory fn}
+                                  data
+                                  [[:bar :bar/baz]]))))))
