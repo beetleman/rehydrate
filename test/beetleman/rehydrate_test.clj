@@ -1,6 +1,10 @@
 (ns beetleman.rehydrate-test
   (:require [beetleman.rehydrate :as sut]
+            [beetleman.rehydrate.async.core-async]
+            [beetleman.rehydrate.async.manifold]
             [promesa.core :as p]
+            [clojure.core.async :as a]
+            [manifold.deferred :as d]
             [clojure.test :as t]))
 
 
@@ -10,7 +14,14 @@
    {:name "clojure.core/future"
     :fn   #(future %)}
    {:name "java.util.concurrent.CompletableFuture"
-    :fn   #(p/future %)}])
+    :fn   #(p/future %)}
+   {:name "clojure.core.async/chan"
+    :fn   (fn [x]
+            (let [ch (a/chan)]
+              (a/put! ch x)
+              ch))}
+   {:name "manifold.deferred.Deferred"
+    :fn   #(d/future %)}])
 
 
 (def data
