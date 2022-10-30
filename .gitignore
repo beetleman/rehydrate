@@ -1,3 +1,5 @@
 /.nrepl-port
 /.cpcache/
 /.clj-kondo/.cache/
+/.cider-repl-history
+!.envrc
