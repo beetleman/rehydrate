@@ -41,3 +41,8 @@
 (t/deftest rehydrate-test
   (t/is (= {[:bar/baz 1] bar-baz}
            @(#'sut/rehydrate {} (#'sut/find-all data [[:bar :bar/baz]])))))
+
+
+(t/deftest run-test
+  (t/is (= hydrated-data
+           @(sut/run {} data [[:bar :bar/baz]]))))

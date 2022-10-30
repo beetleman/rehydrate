@@ -65,8 +65,9 @@
        (if-not (= hydrated-value ::not-found)
          (assoc-in data location hydrated-value)
          (throw (ex-info "Cant find data"
-                         {:path path
-                          :type ::hydrated-not-found})))))
+                         {:path     path
+                          :hydrated hydrated
+                          :type     ::hydrated-not-found})))))
    data
    paths))
 
@@ -110,5 +111,9 @@
 
 
 (defn run
-  [data]
-  data)
+  [ctx data targets]
+  (p/let [paths    (find-all data targets)
+          hydrated (rehydrate ctx paths)]
+    (replace-all data
+                 paths
+                 hydrated)))
